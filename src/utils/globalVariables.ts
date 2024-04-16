@@ -1,0 +1,1 @@
+export const DATA_USER: Record<string, any> = {};
