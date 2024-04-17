@@ -13,21 +13,25 @@ import { generateRandomNumber, sleepTemporary } from './utils/functions'
 import Queue from 'queue-promise';
 import mimeType from 'mime-types';
 import fs from 'node:fs/promises';
-
+import { writeFile } from 'fs/promises'
 
 import dotenv from 'dotenv';
+import { downloadMediaMessage } from '@whiskeysockets/baileys'
 dotenv.config();
 // import { downloadMediaMessage } from '@whiskeysockets/baileys'
+let dtProvider = null;
 
 const PORT = process.env.PORT ?? 3011
 
 const initFlow = addKeyword<Provider, Database>(EVENTS.WELCOME)
     .addAction(async (ctx, { flowDynamic, endFlow, gotoFlow, state, provider }) => {
 
-        
+
         if (DATA_USER[ctx.from]?.ASESORCHATWOOT) {
             return;
         }
+
+        dtProvider = provider;
 
         await sleepTemporary(generateRandomNumber(1500, 1700));
 
@@ -38,6 +42,23 @@ const initFlow = addKeyword<Provider, Database>(EVENTS.WELCOME)
         return;
 
     });
+
+
+const mediaFlow = addKeyword<Provider, Database>(EVENTS.MEDIA)
+    .addAction(
+        async (ctx, { flowDynamic, gotoFlow, endFlow, fallBack, provider, state }) => {
+            dtProvider = provider;
+        }
+    );
+
+
+const documentFlow = addKeyword<Provider, Database>(EVENTS.DOCUMENT)
+    .addAction(
+        async (ctx, { flowDynamic, gotoFlow, endFlow, fallBack, provider, state }) => {
+            dtProvider = provider;
+        }
+    );
+
 
 
 const chatwoot = new ChatwootClass({
@@ -52,7 +73,7 @@ const queue = new Queue({
 })
 
 const main = async () => {
-    const adapterFlow = createFlow([initFlow])
+    const adapterFlow = createFlow([initFlow, mediaFlow, documentFlow])
 
     const adapterProvider = createProvider(Provider)
     const adapterDB = new Database()
@@ -82,35 +103,47 @@ const main = async () => {
                         ASESORCHATWOOT: true
                     };
                 }
+
+                const attachment = []
+                /**
+                 * Determinar si el usuario esta enviando una imagen o video o fichero
+                 * luego puedes ver los fichero en http://localhost:3001/file.pdf o la extension
+                 */
+                if (payload?.body.includes('_event_')) {
+                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype;
+
+                    const extension = mimeType.extension(mime);
+
+                    if (!payload.message) return
+
+                    const buffer = await downloadMediaMessage(
+                        payload??dtProvider,
+                        "buffer",
+                        {},
+                        {
+                            reuploadRequest: dtProvider.vendor.updateMediaMessage, //sock.updateMediaMessage
+                            logger: undefined
+                        }
+                    );
+
+                    const fileName = `file-${Date.now()}.${extension}`
+
+                    console.log(fileName);
+                    // const pathFile = `${process.cwd()}/public/${fileName}`
+                    const pathFile = `./src/app/downloadMediaMessage/media/${fileName}`
+                    await fs.writeFile(pathFile, buffer);
+                    console.log(`[FIECHERO CREADO] http://localhost:3001/${fileName}`)
+                    attachment.push(pathFile)
+                }
+
+                await handlerMessage({
+                    phone: payload.from,
+                    name: payload.pushName,
+                    message: payload.body,
+                    attachment,
+                    mode: 'incoming'
+                }, chatwoot)
                 
-                
-
-                // if (DATA_USER[payload.from]?.hasOwnProperty('ASESORCHATWOOT') && DATA_USER[payload.from].ASESORCHATWOOT) {
-                    const attachment = []
-                    /**
-                     * Determinar si el usuario esta enviando una imagen o video o fichero
-                     * luego puedes ver los fichero en http://localhost:3001/file.pdf o la extension
-                     */
-                    if (payload?.body.includes('_event_')) {
-                        const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype;
-                        const extension = mimeType.extension(mime);
-                        // const buffer = await downloadMediaMessage(payload.message, "buffer", {});
-                        // const fileName = `file-${Date.now()}.${extension}`
-                        // const pathFile = `${process.cwd()}/public/${fileName}`
-                        // await fs.writeFile(pathFile, buffer);
-                        // console.log(`[FIECHERO CREADO] http://localhost:3001/${fileName}`)
-                        // attachment.push(pathFile)
-                    }
-
-                    await handlerMessage({
-                        phone: payload.from,
-                        name: payload.pushName,
-                        message: payload.body,
-                        attachment,
-                        mode: 'incoming'
-                    }, chatwoot)
-                // }
-
 
             } catch (err) {
                 console.log('ERROR', err)
