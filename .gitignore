@@ -8,5 +8,3 @@ node_modules
 
 *.log
 *qr.png
-
-!src/app/downloadMediaMessage/media/
