@@ -37,6 +37,18 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 # Install production dependencies using frozen lock file
 RUN pnpm install --frozen-lockfile --production
 
+# Copia el archivo .env en el contenedor y usa envsubst para reemplazar las variables de entorno
+# COPY .env .env
+# RUN apk add --no-cache gettext \
+#     && envsubst < .env > .env.tmp \
+#     && mv .env.tmp .env \
+#     && apk del gettext
+
+# Define las variables de entorno
+#ENV $(grep -v '^#' .env | xargs)
+
+
+
 
 # Define the command to start the application using PM2 runtime
 CMD ["pm2-runtime", "start", "./dist/app.js", "--cron", "0 */12 * * *"]
