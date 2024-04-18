@@ -1,3 +1,4 @@
+import terser from '@rollup/plugin-terser'
 import typescript from 'rollup-plugin-typescript2'
 
 export default {
@@ -6,8 +7,6 @@ export default {
         file: 'dist/app.js',
         format: 'esm',
     },
-    onwarn: (warning) => {
-        if (warning.code === 'UNRESOLVED_IMPORT') return
-    },
-    plugins: [typescript()],
+
+    plugins: [typescript(), terser()],
 }
