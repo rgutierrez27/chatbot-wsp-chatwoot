@@ -81,7 +81,5 @@ Espero que te sientas como en casa aquí. ¿En qué puedo asistirte hoy?`
 }
 
 export {
-    getArrayMessagesTryCatch,
-    getArrayMessagesIdle,
     getArrayMessagesWelcome
 };
