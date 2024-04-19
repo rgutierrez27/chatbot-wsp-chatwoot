@@ -63,7 +63,7 @@ import { DATA_USER } from 'src/utils/globalVariables';
                 return;
             }
 
-            await bot.sendMessage(
+            await bot.provider.sendMessage(
                 `${phone}`,
                 content,
                 {}
