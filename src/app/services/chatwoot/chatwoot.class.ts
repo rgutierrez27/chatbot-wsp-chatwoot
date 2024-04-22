@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-
+import https from 'https';
 
 interface Config {
     account?: string;
@@ -15,7 +15,7 @@ class ChatwootClass {
      * Recibir todos los parametro de configuracio de conexion con chatwoot
      */
     constructor(_config: Config = {}) {
-        
+
         if (!_config?.account) {
             throw new Error('ACCOUNT_ERROR')
         }
@@ -43,6 +43,19 @@ class ChatwootClass {
             return `+${number}`
         }
         return number
+
+    }
+
+    formatNumber2 = (number: any) => {
+        // if (!number.startsWith("+")) {
+        //     return `+${number}`
+        // }
+        // return number
+
+        if (number.startsWith("+")) {
+            return number.slice(1); // Elimina el primer caracter (el "+")
+        }
+        return number;
     }
 
     /**
@@ -66,6 +79,10 @@ class ChatwootClass {
      * @returns 
      */
     buildBaseUrl = (path: string): string => {
+        console.log('Base URL');
+        console.log(`${this.config.endpoint}/api/v1/accounts/${this.config.account}${path}`);
+
+
         return `${this.config.endpoint}/api/v1/accounts/${this.config.account}${path}`;
     }
 
@@ -82,7 +99,10 @@ class ChatwootClass {
 
             const dataFetch = await fetch(url, {
                 headers: this.buildHeader(),
-                method: 'GET'
+                method: 'GET',
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
             })
 
             const data = await dataFetch.json()
@@ -116,7 +136,10 @@ class ChatwootClass {
             const dataFetch = await fetch(url, {
                 headers: this.buildHeader(),
                 method: 'POST',
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
             })
 
             const response = await dataFetch.json()
@@ -161,7 +184,7 @@ class ChatwootClass {
     createConversation = async (dataIn: any = { inbox_id: '', contact_id: '', phone_number: '' }) => {
         try {
 
-            dataIn.phone_number = this.formatNumber(dataIn.phone_number)
+            dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
 
             const payload = {
                 custom_attributes: { phone_number: dataIn.phone_number },
@@ -173,6 +196,9 @@ class ChatwootClass {
                     method: "POST",
                     headers: this.buildHeader(),
                     body: JSON.stringify({ ...dataIn, ...payload }),
+                    // Desactivar la verificación del certificado SSL
+                    // @ts-ignore
+                    agent: new https.Agent({ rejectUnauthorized: false })
                 }
             );
             const data = await dataFetch.json();
@@ -191,7 +217,7 @@ class ChatwootClass {
      */
     findConversation = async (dataIn: any = { phone_number: '' }) => {
         try {
-            dataIn.phone_number = this.formatNumber(dataIn.phone_number)
+            dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
 
             const payload = [
                 {
@@ -210,6 +236,9 @@ class ChatwootClass {
                     method: "POST",
                     headers: this.buildHeader(),
                     body: JSON.stringify({ payload }),
+                    // Desactivar la verificación del certificado SSL
+                    // @ts-ignore
+                    agent: new https.Agent({ rejectUnauthorized: false })
                 }
             );
 
@@ -255,13 +284,13 @@ class ChatwootClass {
         try {
             const url = this.buildBaseUrl(`/conversations/${dataIn.conversation_id}/messages`)
             const form = new FormData();
-          
+
             form.set("content", dataIn.msg);
             form.set("message_type", dataIn.mode);
             form.set("private", "true");
 
-            if(dataIn.attachment?.length){
-                const fileName  = `${dataIn.attachment[0]}`.split('/').pop()
+            if (dataIn.attachment?.length) {
+                const fileName = `${dataIn.attachment[0]}`.split('/').pop()
                 const blob = new Blob([await readFile(dataIn.attachment[0])]);
                 form.set("attachments[]", blob, fileName);
             }
@@ -269,9 +298,12 @@ class ChatwootClass {
                 {
                     method: "POST",
                     headers: {
-                        api_access_token:this.config.token
+                        api_access_token: this.config.token
                     },
-                    body: form
+                    body: form,
+                    // Desactivar la verificación del certificado SSL
+                    // @ts-ignore
+                    agent: new https.Agent({ rejectUnauthorized: false })
                 }
             );
             const data = await dataFetch.json();
@@ -302,7 +334,10 @@ class ChatwootClass {
             const dataFetch = await fetch(url, {
                 headers: this.buildHeader(),
                 method: 'POST',
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
             })
 
             const data = await dataFetch.json();
@@ -327,6 +362,9 @@ class ChatwootClass {
             const dataFetch = await fetch(url, {
                 headers: this.buildHeader(),
                 method: 'GET',
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
             })
 
             const data = await dataFetch.json();

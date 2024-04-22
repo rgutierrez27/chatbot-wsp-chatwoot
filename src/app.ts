@@ -38,7 +38,9 @@ const initFlow = addKeyword<Provider, Database>(EVENTS.WELCOME)
         const names = ctx.name;
         const { response } = getArrayMessagesWelcome(names);
         const messageWelcome = response[Math.floor(Math.random() * response.length)];
-        await flowDynamic(messageWelcome);
+        console.log(messageWelcome);
+        
+        // await flowDynamic(messageWelcome);
         return;
 
     });

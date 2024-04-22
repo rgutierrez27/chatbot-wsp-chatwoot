@@ -53,13 +53,14 @@ import { DATA_USER } from 'src/utils/globalVariables';
                 // );
 
                     console.log('es un archivo');
-                    
+                console.log(file.data_url);
+                
                 await bot.sendMessage(
                     `${phone}@c.us`,
                     content,
                     {media: file.data_url ?? null}
                 );
-                res.send('ok');
+                
                 return;
             }
 
@@ -70,7 +71,7 @@ import { DATA_USER } from 'src/utils/globalVariables';
             );
 
             // res.status(200).send('ok'); // Enviar una respuesta con estado 200
-            // res.send('ok');
+            
             return;
 
         }
