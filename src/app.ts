@@ -40,7 +40,7 @@ const initFlow = addKeyword<Provider, Database>(EVENTS.WELCOME)
         const messageWelcome = response[Math.floor(Math.random() * response.length)];
         console.log(messageWelcome);
         
-        // await flowDynamic(messageWelcome);
+        await flowDynamic(messageWelcome);
         return;
 
     });
@@ -112,10 +112,16 @@ const main = async () => {
                  * luego puedes ver los fichero en http://localhost:3001/file.pdf o la extension
                  */
                 if (payload?.body.includes('_event_')) {
-                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype;
+                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype ?? payload?.message?.audioMessage?.mimetype;
 
+                    console.log('payload?.message?');
+                    console.log(payload?.message);
+                    
                     const extension = mimeType.extension(mime);
-
+                    console.log('extension');
+                    console.log(extension);
+                    
+                    
                     if (!payload.message) return
 
                     const buffer = await downloadMediaMessage(
@@ -123,7 +129,7 @@ const main = async () => {
                         "buffer",
                         {},
                         {
-                            reuploadRequest: dtProvider.vendor.updateMediaMessage, //sock.updateMediaMessage
+                            reuploadRequest: dtProvider?.vendor?.updateMediaMessage, //sock.updateMediaMessage
                             logger: undefined
                         }
                     );

@@ -18,10 +18,6 @@ const handlerMessage = async (dataIn: { phone: string; name: string; message: st
             phone_number: dataIn.phone
         });
 
-        console.log('Cconversation ...');
-        console.log(conversation.id);
-        
-        
 
         await chatwoot.createMessage({
             msg: dataIn.message,

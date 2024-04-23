@@ -293,6 +293,8 @@ class ChatwootClass {
                 const fileName = `${dataIn.attachment[0]}`.split('/').pop()
                 const blob = new Blob([await readFile(dataIn.attachment[0])]);
                 form.set("attachments[]", blob, fileName);
+                form.set("content", "");
+                form.set("file_type", "audio");
             }
             const dataFetch = await fetch(url,
                 {

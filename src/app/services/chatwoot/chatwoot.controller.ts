@@ -8,16 +8,16 @@ import { DATA_USER } from 'src/utils/globalVariables';
  * @param {*} req 
  * @param {*} res 
  */
- const chatwootCtrl = async (req: any, res: any) => {
-    
+const chatwootCtrl = async (req: any, res: any) => {
+
     const body = req.body;
     const attachments = body?.attachments;
     const bot = req.bot;
 
     // console.log(bot.provider);
     // return;
-    
-    
+
+
     try {
 
         const mapperAttributes = body?.changed_attributes?.map((a: any) => Object.keys(a)).flat(2);
@@ -44,6 +44,60 @@ import { DATA_USER } from 'src/utils/globalVariables';
             const content = body?.content ?? '';
 
             const file = attachments?.length ? attachments[0] : null;
+
+            // console.log('******');
+
+            // console.log(body.attachments[0].file_type);
+            // console.log(body.attachments[0]);
+            // console.log(file.data_url);
+
+
+
+            if (body?.content == null && body.attachments[0].file_type == "audio") { /* Para comprobar si es audio */
+                await bot.provider.sendAudio(`${phone}@c.us`, file.data_url)
+                return
+            }
+
+            if (body?.content == null && body.attachments[0].file_type == "file") { /* Para comprobar si es documento */
+
+                const sock = await bot.provider.getInstance();
+                await sock.sendMessage(
+                    `${phone}@c.us`,
+                    {
+                        document: {
+                            url: file.data_url
+                        },
+                        mimetype: 'application/pdf',
+                        fileName: 'documento.pdf'
+                    }
+                );
+
+                return
+            }
+
+            if (body?.content == null && body.attachments[0].file_type == "video") { /* Para comprobar si es video */
+
+                const sock = await bot.provider.getInstance();
+                await sock.sendMessage(
+                    `${phone}@c.us`,
+                    {
+                        video: { url: file.data_url },
+                        caption: '',
+                        gifPlayback: true,
+                    }
+
+                    // {
+                    //     video: "./Media/ma_gif.mp4",
+                    //     caption: "hello!",
+                    //     gifPlayback: true
+                    // }
+
+                );
+
+                return
+            }
+
+
             if (file) {
                 console.log(`Este es el archivo adjunto...`, file.data_url);
                 // await bot.sendMedia(
@@ -52,15 +106,15 @@ import { DATA_USER } from 'src/utils/globalVariables';
                 //     content,
                 // );
 
-                    console.log('es un archivo');
+                console.log('es un archivo');
                 console.log(file.data_url);
-                
+
                 await bot.sendMessage(
                     `${phone}@c.us`,
                     content,
-                    {media: file.data_url ?? null}
+                    { media: file.data_url ?? null }
                 );
-                
+
                 return;
             }
 
@@ -71,7 +125,7 @@ import { DATA_USER } from 'src/utils/globalVariables';
             );
 
             // res.status(200).send('ok'); // Enviar una respuesta con estado 200
-            
+
             return;
 
         }
