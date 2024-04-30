@@ -5,7 +5,7 @@ import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 
 import chatwootCtrl from './app/services/chatwoot/chatwoot.controller'
 import ChatwootClass from 'src/app/services/chatwoot/chatwoot.class'
-import handlerMessage from './app/services/chatwoot'
+import handlerMessage, { handlerMessageAttachment } from './app/services/chatwoot'
 
 import { getArrayMessagesWelcome } from './app/helpers/greetingHelpers'
 import { DATA_USER } from './utils/globalVariables'
@@ -112,36 +112,41 @@ const main = async () => {
                  * luego puedes ver los fichero en http://localhost:3001/file.pdf o la extension
                  */
                 if (payload?.body.includes('_event_')) {
-                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype ?? payload?.message?.audioMessage?.mimetype;
-
-                    console.log('payload?.message?');
-                    console.log(payload?.message);
+                    await handlerMessageAttachment({
+                        phone: payload.from,
+                        name: payload.pushName,
+                        message: payload.body,
+                        media: '',
+                        mode: 'incoming',
+                        mediaData: payload
+                    }, chatwoot, bot)
                     
-                    const extension = mimeType.extension(mime);
-                    console.log('extension');
-                    console.log(extension);
-                    
-                    
-                    if (!payload.message) return
+                    // const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentMessage?.mimetype ?? payload?.message?.audioMessage?.mimetype;
 
-                    const buffer = await downloadMediaMessage(
-                        payload??dtProvider,
-                        "buffer",
-                        {},
-                        {
-                            reuploadRequest: dtProvider?.vendor?.updateMediaMessage, //sock.updateMediaMessage
-                            logger: undefined
-                        }
-                    );
+                    // const extension = mimeType.extension(mime);
 
-                    const fileName = `file-${Date.now()}.${extension}`
+                    // if (!payload.message) return
 
-                    console.log(fileName);
-                    // const pathFile = `${process.cwd()}/public/${fileName}`
-                    const pathFile = `./src/app/downloadMediaMessage/media/${fileName}`
-                    await fs.writeFile(pathFile, buffer);
-                    console.log(`[FIECHERO CREADO] http://localhost:3001/${fileName}`)
-                    attachment.push(pathFile)
+                    // const buffer = await downloadMediaMessage(
+                    //     payload??dtProvider,
+                    //     "buffer",
+                    //     {},
+                    //     {
+                    //         reuploadRequest: dtProvider?.vendor?.updateMediaMessage, //sock.updateMediaMessage
+                    //         logger: undefined
+                    //     }
+                    // );
+
+                    // const fileName = `file-${Date.now()}.${extension}`
+
+                    // console.log(fileName);
+                    // // const pathFile = `${process.cwd()}/public/${fileName}`
+                    // const pathFile = `./src/app/downloadMediaMessage/media/${fileName}`
+                    // await fs.writeFile(pathFile, buffer);
+                    // console.log(`[FIECHERO CREADO] http://localhost:3001/${fileName}`)
+                    // attachment.push(pathFile)
+
+                    // return;
                 }
 
                 await handlerMessage({

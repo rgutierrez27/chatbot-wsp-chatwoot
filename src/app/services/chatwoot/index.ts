@@ -1,3 +1,4 @@
+import { MediaData } from 'src/app/types';
 import ChatwootClass from './chatwoot.class';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -31,4 +32,33 @@ const handlerMessage = async (dataIn: { phone: string; name: string; message: st
     }
 };
 
-export default handlerMessage;
+
+const handlerMessageAttachment = async (dataIn: { phone: string, name: string, message: string, media: string, mode: string, mediaData?: any, }, chatwoot: ChatwootClass,bot:any) => {
+    try {
+        const nameImboxCwt = process.env.CHATWOOT_NAMEINBOX ?? 'BOTWSP'
+        const inbox = await chatwoot.findOrCreateInbox({ name: nameImboxCwt });
+        const contact = await chatwoot.findOrCreateContact({ from: dataIn.phone, name: dataIn.name });
+        const conversation = await chatwoot.findOrCreateConversation({
+            inbox_id: inbox.id,
+            contact_id: contact.id,
+            phone_number: dataIn.phone
+        });
+
+        await chatwoot.createMessageAttachment({
+            msg: dataIn.message,
+            name: dataIn.name,
+            mode: dataIn.mode,
+            conversation_id: conversation.id,
+            mediaData: dataIn.mediaData,
+            media: dataIn.media,
+            botInstance: bot
+        });
+    } catch (error) {
+        console.error('[Error handlerMessageAttachment]', error);
+    }
+}
+
+export {
+    handlerMessage,
+    handlerMessageAttachment
+};

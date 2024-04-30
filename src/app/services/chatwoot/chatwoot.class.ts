@@ -1,5 +1,15 @@
 import { readFile } from 'fs/promises';
 import https from 'https';
+import fs from 'fs';
+import FormData from "form-data";
+import {
+    Contact,
+    Conversation,
+    AttributeDefinition,
+    MediaData,
+} from "../../types/index";
+import { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
 interface Config {
     account?: string;
@@ -285,31 +295,170 @@ class ChatwootClass {
             const url = this.buildBaseUrl(`/conversations/${dataIn.conversation_id}/messages`)
             const form = new FormData();
 
-            form.set("content", dataIn.msg);
-            form.set("message_type", dataIn.mode);
-            form.set("private", "true");
+            form.append("content", dataIn.msg);
+            form.append("message_type", dataIn.mode);
+            form.append("private", "true");
 
-            if (dataIn.attachment?.length) {
-                const fileName = `${dataIn.attachment[0]}`.split('/').pop()
-                const blob = new Blob([await readFile(dataIn.attachment[0])]);
-                form.set("attachments[]", blob, fileName);
-                form.set("content", "");
-                form.set("file_type", "audio");
-            }
+            // if (dataIn.attachment?.length) {
+            //     const fileName = `${dataIn.attachment[0]}`.split('/').pop()
+            //     const blob = new Blob([await readFile(dataIn.attachment[0])]);
+
+            //     form.append("attachments[]", blob, fileName);
+            //     form.append("content", "Adjunto...");
+            //     form.append("file_type", "image");
+            // }
+
+
+            const myHeaders = new Headers();
+            myHeaders.append("api_access_token", this.config.token);
+
             const dataFetch = await fetch(url,
                 {
                     method: "POST",
-                    headers: {
-                        api_access_token: this.config.token
-                    },
+                    headers: myHeaders,
                     body: form,
                     // Desactivar la verificación del certificado SSL
                     // @ts-ignore
                     agent: new https.Agent({ rejectUnauthorized: false })
                 }
             );
+
             const data = await dataFetch.json();
             return data
+        } catch (error) {
+            console.error(`[Error createMessage]`, error)
+            return
+        }
+    }
+
+    handleMediaData = async (MediaData: MediaData, form: FormData, botInstance: any) => {
+        try {
+            for (const typeKey in MediaData.message) {
+                const mediaType = MediaData.message[typeKey];
+                if (!mediaType || !mediaType.mimetype) {
+                    continue;
+                }
+                const { caption, mimetype, filename } = mediaType;
+
+                const filePath = await botInstance.provider.saveFile(MediaData);
+                const safeFilename = filename || `file.${mimetype.split("/")[1]}`;
+                if (fs.existsSync(filePath)) {
+                    const stream = await fs.createReadStream(filePath);
+                    form.append("attachments[]", stream, {
+                        filename: safeFilename,
+                        contentType: mimetype,
+                    });
+
+                    if (caption) {
+                        form.append("content", caption);
+                    }
+                } else {
+                    console.error("File does not exist:", filePath);
+                }
+            }
+        } catch (error) {
+            console.error("Error handling media data:", error);
+        }
+    }
+
+    async downloadMedia(mediaUrl: string): Promise<any> {
+        try {
+            const response = await axios.get(mediaUrl, {
+                responseType: "stream",
+            });
+            return {
+                data: response.data,
+                contentType: response.headers["content-type"],
+            };
+
+
+        } catch (error) {
+            console.error("Error downloading media:", error);
+            return null; // O maneja el error de otra manera
+        }
+    }
+
+    private extractFileName(url: string, contentType: string): string {
+        // Extracts a file name from the URL or creates a generic one based on content type
+        const urlParts = url.split("/");
+        const lastSegment = urlParts[urlParts.length - 1];
+        if (lastSegment && lastSegment.includes(".")) {
+            return lastSegment; // Use the original file name if present
+        } else {
+            // Create a generic file name if URL does not include one
+            const extension = contentType.split("/")[1] || "bin"; // Default to 'bin' if no extension is detectable
+            return `file.${extension}`;
+        }
+    }
+
+    handleURLMedia = async (url: string, form: FormData) => {
+        try {
+            if (url.includes("http://") || url.includes("https://")) {
+                const { data, contentType } = await this.downloadMedia(url);
+                const fileName = this.extractFileName(url, contentType);
+                form.append("attachments[]", data, {
+                    filename: fileName,
+                });
+            } else if (fs.existsSync(url)) {
+                const fileName = url.substring(url.lastIndexOf("/"));
+                const stream = fs.createReadStream(url);
+                form.append("attachments[]", stream, {
+                    filename: fileName,
+                });
+            } else {
+                console.warn(
+                    "The URL does not start with http or https and is not a valid file path:",
+                    url
+                );
+            }
+        } catch (error) {
+            console.error("Error handling URL media:", error);
+        }
+    }
+
+    createMessageAttachment = async (dataIn: any = { msg: '', name: '', mode: '', conversation_id: '', mediaData: null, media: null, botInstance: null }) => {
+        try {
+            const url = this.buildBaseUrl(`/conversations/${dataIn.conversation_id}/messages`)
+            const form = new FormData();
+
+            if (dataIn.msg) {
+                form.append("content", dataIn.msg);
+            }
+
+            if (dataIn.mediaData) {
+                await this.handleMediaData(dataIn.mediaData, form, dataIn.botInstance);
+            }
+
+            if (dataIn.media) {
+                await this.handleURLMedia(dataIn.media, form);
+            }
+
+            form.append("message_type", dataIn.mode);
+            form.append("private", "true");
+
+            if (dataIn.name) form.append("name", dataIn.name);
+
+            // const myHeaders = new Headers();
+            // myHeaders.append("api_access_token", this.config.token);
+
+            try {
+                const response = await axios.post(url, form, {
+                    headers: {
+                        ...form.getHeaders(),
+                        'api_access_token': this.config.token,
+                        'Content-Type': 'multipart/form-data', // Asegúrate de establecer el tipo de contenido adecuado para FormData
+                    },
+                });
+
+                // Manejar la respuesta
+                console.log(response.data);
+
+                return response.data
+            } catch (error) {
+                // Manejar errores de la solicitud
+                console.error('Error al enviar la solicitud:', error);
+            }
+
         } catch (error) {
             console.error(`[Error createMessage]`, error)
             return
