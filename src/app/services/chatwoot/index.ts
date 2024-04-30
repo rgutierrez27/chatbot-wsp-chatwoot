@@ -38,6 +38,7 @@ const handlerMessageAttachment = async (dataIn: { phone: string, name: string, m
         const nameImboxCwt = process.env.CHATWOOT_NAMEINBOX ?? 'BOTWSP'
         const inbox = await chatwoot.findOrCreateInbox({ name: nameImboxCwt });
         const contact = await chatwoot.findOrCreateContact({ from: dataIn.phone, name: dataIn.name });
+        // const contact = await chatwoot.findOrCreateContact({ contact_id: contact.id});
         const conversation = await chatwoot.findOrCreateConversation({
             inbox_id: inbox.id,
             contact_id: contact.id,
@@ -45,7 +46,7 @@ const handlerMessageAttachment = async (dataIn: { phone: string, name: string, m
         });
 
         await chatwoot.createMessageAttachment({
-            msg: dataIn.message,
+            msg: null,
             name: dataIn.name,
             mode: dataIn.mode,
             conversation_id: conversation.id,

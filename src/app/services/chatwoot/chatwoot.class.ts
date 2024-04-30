@@ -225,27 +225,16 @@ class ChatwootClass {
      * @param {*} dataIn 
      * @returns 
      */
-    findConversation = async (dataIn: any = { phone_number: '' }) => {
+    findConversation = async (dataIn: any = { phone_number: '', contact_id: '' }) => {
         try {
             dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
 
-            const payload = [
-                {
-                    attribute_key: "phone_number",
-                    attribute_model: "standard",
-                    filter_operator: "equal_to",
-                    values: [dataIn.phone_number],
-                    custom_attribute_type: "",
-                },
-            ];
-
-            const url = this.buildBaseUrl(`/conversations/filter`)
+            const url = this.buildBaseUrl(`/contacts/${dataIn.contact_id}/conversations`)
 
             const dataFetch = await fetch(url,
                 {
-                    method: "POST",
+                    method: "GET",
                     headers: this.buildHeader(),
-                    body: JSON.stringify({ payload }),
                     // Desactivar la verificación del certificado SSL
                     // @ts-ignore
                     agent: new https.Agent({ rejectUnauthorized: false })
@@ -312,19 +301,28 @@ class ChatwootClass {
             const myHeaders = new Headers();
             myHeaders.append("api_access_token", this.config.token);
 
-            const dataFetch = await fetch(url,
-                {
-                    method: "POST",
-                    headers: myHeaders,
-                    body: form,
-                    // Desactivar la verificación del certificado SSL
-                    // @ts-ignore
-                    agent: new https.Agent({ rejectUnauthorized: false })
-                }
-            );
 
-            const data = await dataFetch.json();
-            return data
+            const response = await axios.post(url, form, {
+                headers: {
+                    'api_access_token': this.config.token,
+                },
+            });
+
+            return response.data
+
+            // const dataFetch = await fetch(url,
+            //     {
+            //         method: "POST",
+            //         headers: myHeaders,
+            //         body: form,
+            //         // Desactivar la verificación del certificado SSL
+            //         // @ts-ignore
+            //         agent: new https.Agent({ rejectUnauthorized: false })
+            //     }
+            // );
+
+            // const data = await dataFetch.json();
+            // return data
         } catch (error) {
             console.error(`[Error createMessage]`, error)
             return
@@ -441,26 +439,18 @@ class ChatwootClass {
             // const myHeaders = new Headers();
             // myHeaders.append("api_access_token", this.config.token);
 
-            try {
-                const response = await axios.post(url, form, {
-                    headers: {
-                        ...form.getHeaders(),
-                        'api_access_token': this.config.token,
-                        'Content-Type': 'multipart/form-data', // Asegúrate de establecer el tipo de contenido adecuado para FormData
-                    },
-                });
+            const response = await axios.post(url, form, {
+                headers: {
+                    ...form.getHeaders(),
+                    'api_access_token': this.config.token,
+                    'Content-Type': 'multipart/form-data', // Asegúrate de establecer el tipo de contenido adecuado para FormData
+                },
+            });
 
-                // Manejar la respuesta
-                console.log(response.data);
-
-                return response.data
-            } catch (error) {
-                // Manejar errores de la solicitud
-                console.error('Error al enviar la solicitud:', error);
-            }
+            return response.data
 
         } catch (error) {
-            console.error(`[Error createMessage]`, error)
+            console.error(`[Error createMessageAttachment]`, error)
             return
         }
     }

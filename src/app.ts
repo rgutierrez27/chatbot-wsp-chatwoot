@@ -5,7 +5,7 @@ import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 
 import chatwootCtrl from './app/services/chatwoot/chatwoot.controller'
 import ChatwootClass from 'src/app/services/chatwoot/chatwoot.class'
-import handlerMessage, { handlerMessageAttachment } from './app/services/chatwoot'
+import {handlerMessage, handlerMessageAttachment} from './app/services/chatwoot'
 
 import { getArrayMessagesWelcome } from './app/helpers/greetingHelpers'
 import { DATA_USER } from './utils/globalVariables'
@@ -112,10 +112,10 @@ const main = async () => {
                  * luego puedes ver los fichero en http://localhost:3001/file.pdf o la extension
                  */
                 if (payload?.body.includes('_event_')) {
-                    await handlerMessageAttachment({
+                    return await handlerMessageAttachment({
                         phone: payload.from,
                         name: payload.pushName,
-                        message: payload.body,
+                        message: null,
                         media: '',
                         mode: 'incoming',
                         mediaData: payload
