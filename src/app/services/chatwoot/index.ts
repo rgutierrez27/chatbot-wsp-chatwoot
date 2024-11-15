@@ -13,7 +13,9 @@ const handlerMessage = async (dataIn: { phone: string; name: string; message: st
         const nameImboxCwt = process.env.CHATWOOT_NAMEINBOX ?? 'BOTWSP'
         const inbox = await chatwoot.findOrCreateInbox({ name: nameImboxCwt });
         const contact = await chatwoot.findOrCreateContact({ from: dataIn.phone, name: dataIn.name });
-        const conversation = await chatwoot.findOrCreateConversation({
+        const attributeContact = await chatwoot.findOrCreateAttributeContact({ from: dataIn.phone, contact_id: contact.id });
+        const attributeConversation = await chatwoot.findOrCreateAttributeConversation({ from: dataIn.phone, contact_id: contact.id });
+        const conversationID = await chatwoot.findOrCreateConversation({
             inbox_id: inbox.id,
             contact_id: contact.id,
             phone_number: dataIn.phone
@@ -23,7 +25,7 @@ const handlerMessage = async (dataIn: { phone: string; name: string; message: st
         await chatwoot.createMessage({
             msg: dataIn.message,
             mode: dataIn.mode,
-            conversation_id: conversation.id,
+            conversation_id: conversationID,
             attachment: dataIn.attachment
         });
     } catch (error) {
@@ -39,7 +41,10 @@ const handlerMessageAttachment = async (dataIn: { phone: string, name: string, m
         const inbox = await chatwoot.findOrCreateInbox({ name: nameImboxCwt });
         const contact = await chatwoot.findOrCreateContact({ from: dataIn.phone, name: dataIn.name });
         // const contact = await chatwoot.findOrCreateContact({ contact_id: contact.id});
-        const conversation = await chatwoot.findOrCreateConversation({
+        const attributeContact = await chatwoot.findOrCreateAttributeContact({ from: dataIn.phone, contact_id: contact.id });
+        const attributeConversation = await chatwoot.findOrCreateAttributeConversation({ from: dataIn.phone, contact_id: contact.id });
+
+        const conversationID = await chatwoot.findOrCreateConversation({
             inbox_id: inbox.id,
             contact_id: contact.id,
             phone_number: dataIn.phone
@@ -49,7 +54,7 @@ const handlerMessageAttachment = async (dataIn: { phone: string, name: string, m
             msg: null,
             name: dataIn.name,
             mode: dataIn.mode,
-            conversation_id: conversation.id,
+            conversation_id: conversationID,
             mediaData: dataIn.mediaData,
             media: dataIn.media,
             botInstance: bot

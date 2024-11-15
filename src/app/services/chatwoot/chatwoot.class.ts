@@ -105,7 +105,7 @@ class ChatwootClass {
      */
     findContact = async (from: any) => {
         try {
-            const url = this.buildBaseUrl(`/contacts/search?q=${from}`)
+            const url = this.buildBaseUrl(`/contacts/search?q=+${from}`)
 
             const dataFetch = await fetch(url, {
                 headers: this.buildHeader(),
@@ -169,16 +169,65 @@ class ChatwootClass {
      */
     findOrCreateContact = async (dataIn: any = { from: '', name: '', inbox: '' }) => {
         try {
-            dataIn.from = this.formatNumber(dataIn.from)
+            // dataIn.from = this.formatNumber(dataIn.from)
             const getContact = await this.findContact(dataIn.from)
+
             if (!getContact) {
+                console.log('Contacto no econtrado, se va a crear');
                 const contact = await this.createContact(dataIn)
                 return contact
             }
+
             return getContact
 
         } catch (error) {
             console.error(`[Error findOrCreateContact]`, error)
+            return
+        }
+    }
+
+    findOrCreateAttributeContact = async (dataIn: any = { from: '', contact_id: '' }) => {
+        try {
+
+            const getAttributes = await this.findAttributesContact(dataIn.from);
+            if (!getAttributes) {
+                const result = await this.createAttributesContact(
+                    dataIn.contact_id,
+                    "is_active_chatbot",
+                    "OFF"
+                );
+                if (result) {
+                    console.log("Atributo actualizado con éxito.");
+                }
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(`[Error findOrCreateAttribute]`, error)
+            return
+        }
+    }
+
+    findOrCreateAttributeConversation = async (dataIn: any = { from: '', contact_id: '' }) => {
+        try {
+
+            const getAttributes = await this.findAttributesConversation(dataIn.from);
+            if (!getAttributes) {
+                console.log('Creando atributo de conversacion');
+                
+                const result = await this.createAttributesConversation(
+                    "is_active_chatbot"
+                );
+                if (result) {
+                    console.log("Atributo de conversación actualizado con éxito.");
+                }
+            }
+            console.log('atributo de conversacion ya existe');
+            return true;
+
+        } catch (error) {
+            console.error(`[Error findOrCreateAttribute]`, error)
             return
         }
     }
@@ -197,7 +246,7 @@ class ChatwootClass {
             dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
 
             const payload = {
-                custom_attributes: { phone_number: dataIn.phone_number },
+                custom_attributes: { phone_number: dataIn.phone_number, inbox_id: dataIn.inbox_id },
             };
 
             const url = this.buildBaseUrl(`/conversations`)
@@ -212,7 +261,7 @@ class ChatwootClass {
                 }
             );
             const data = await dataFetch.json();
-            return data
+            return data.id
         } catch (error) {
             console.error(`[Error createConversation]`, error)
             return
@@ -225,26 +274,89 @@ class ChatwootClass {
      * @param {*} dataIn 
      * @returns 
      */
-    findConversation = async (dataIn: any = { phone_number: '', contact_id: '' }) => {
+    findConversation = async (dataIn: any = { phone_number: '', contact_id: '', inbox_id: '' }) => {
+        // METHOD 1
+        // try {
+        //     dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
+
+        //     const url = this.buildBaseUrl(`/contacts/${dataIn.contact_id}/conversations`)
+
+        //     const dataFetch = await fetch(url,
+        //         {
+        //             method: "GET",
+        //             headers: this.buildHeader(),
+        //             // Desactivar la verificación del certificado SSL
+        //             // @ts-ignore
+        //             agent: new https.Agent({ rejectUnauthorized: false })
+        //         }
+        //     );
+
+
+        //     const data = await dataFetch.json();
+        //     // console.log(data);
+        //     return data.payload
+        // } catch (error) {
+        //     console.error(`[Error findConversation]`, error)
+        //     return
+        // }
+
+
+        // METHOD 2
         try {
-            dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
+            // dataIn.phone_number = this.formatNumber2(dataIn.phone_number)
+
+            const payload = [
+                {
+                    attribute_key: "phone_number",
+                    attribute_model: "standard",
+                    filter_operator: "equal_to",
+                    values: [dataIn.phone_number],
+                    custom_attribute_type: "",
+                    query_operator: "AND"
+                },
+                {
+                    attribute_key: "inbox_id",
+                    attribute_model: "standard",
+                    filter_operator: "equal_to",
+                    values: [dataIn.inbox_id],
+                    custom_attribute_type: "",
+                    query_operator: null,
+
+                },
+            ];
+
+            // const url = this.buildBaseUrl(`/conversations/filter`)
+            // const dataFetch = await fetch(url,
+            //     {
+            //         method: "POST",
+            //         headers: this.buildHeader(),
+            //         body: JSON.stringify({ payload }),
+            //     }
+            // );
+
+            // const data = await dataFetch.json();
+            // // console.log(data);
+            // return data.payload
 
             const url = this.buildBaseUrl(`/contacts/${dataIn.contact_id}/conversations`)
 
-            const dataFetch = await fetch(url,
-                {
-                    method: "GET",
-                    headers: this.buildHeader(),
-                    // Desactivar la verificación del certificado SSL
-                    // @ts-ignore
-                    agent: new https.Agent({ rejectUnauthorized: false })
-                }
-            );
-
+            const dataFetch = await fetch(url, {
+                headers: this.buildHeader(),
+                method: 'GET',
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
+            })
 
             const data = await dataFetch.json();
-            // console.log(data);
-            return data.payload
+            const conversation = data.payload.find(
+                (c) => c.inbox_id == (dataIn.inbox_id as number)
+            );
+
+            const conversationId = conversation?.messages?.[0]?.conversation_id;
+
+            return conversationId || null;
+
         } catch (error) {
             console.error(`[Error findConversation]`, error)
             return
@@ -259,13 +371,14 @@ class ChatwootClass {
      */
     findOrCreateConversation = async (dataIn: any = { inbox_id: '', contact_id: '', phone_number: '' }) => {
         try {
-            dataIn.phone_number = this.formatNumber(dataIn.phone_number)
+            // dataIn.phone_number = this.formatNumber(dataIn.phone_number)
             const getId = await this.findConversation(dataIn)
-            if (!getId?.length) {
+            if (!getId) {
                 const conversationId = await this.createConversation(dataIn)
                 return conversationId
             }
-            return getId[0]
+
+            return getId
         } catch (error) {
             console.error(`[Error findOrCreateInbox]`, error)
             return
@@ -541,6 +654,124 @@ class ChatwootClass {
 
         } catch (error) {
             console.error(`[Error findOrCreateInbox]`, error)
+            return
+        }
+    }
+
+    findAttributesContact = async (from: any) => {
+        try {
+            const url = this.buildBaseUrl(`/contacts/search?q=+${from}`)
+
+            const dataFetch = await fetch(url, {
+                headers: this.buildHeader(),
+                method: 'GET',
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
+            })
+
+            const data = await dataFetch.json()
+            // return data.payload[0]
+
+            const contact = data.payload[0];
+            // Verificamos si existe custom_attributes y is_active_chatbot
+            if (!contact.custom_attributes || !contact.custom_attributes.is_active_chatbot) {
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(`[Error findAttributes]`, error)
+            return []
+        }
+    }
+
+    createAttributesContact = async (contactID: string, field: string, attributes: any): Promise<boolean> => {
+        try {
+            const data = {
+                custom_attributes: {
+                    [field]: attributes
+                }
+            };
+
+            const url = this.buildBaseUrl(`/contacts/${contactID}`)
+
+            const dataFetch = await fetch(url, {
+                headers: this.buildHeader(),
+                method: 'PUT',
+                body: JSON.stringify(data),
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
+            })
+
+            return true;
+
+        } catch (error) {
+            console.error(`[Error createContact]`, error)
+            return
+        }
+    }
+
+    findAttributesConversation = async (from: any) => {
+        try {
+            const url = this.buildBaseUrl(`/custom_attribute_definitions`)
+            const targetAttributeKey = "is_active_chatbot";
+
+            const dataFetch = await fetch(url, {
+                headers: this.buildHeader(),
+                method: 'GET',
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
+            })
+
+            const data = await dataFetch.json()
+            // return data.payload[0]
+
+            if (data && data.length > 0) {
+                for (const attribute of data) {
+                    if (attribute.attribute_key === targetAttributeKey) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+
+        } catch (error) {
+            console.error(`[Error findAttributes]`, error)
+            return []
+        }
+    }
+
+    createAttributesConversation = async ( field: string): Promise<boolean> => {
+        try {
+            const data = {
+                attribute_display_name: "Funciones del ChatBot", // Nombre visible del atributo.
+                attribute_display_type: 6, // Tipo de visualización: Lista.
+                attribute_description: "Desactiva el chatbot a un cliente", // Descripción del atributo.
+                attribute_key: field, // Clave única para el atributo.
+                attribute_values: ["ON", "OFF"], // Posibles valores para el atributo.
+                attribute_model: 1, // Tipo de modelo: Contacto.
+            };
+
+            const url = this.buildBaseUrl(`/custom_attribute_definitions`)
+
+            const dataFetch = await fetch(url, {
+                headers: this.buildHeader(),
+                method: 'POST',
+                body: JSON.stringify(data),
+                // Desactivar la verificación del certificado SSL
+                // @ts-ignore
+                agent: new https.Agent({ rejectUnauthorized: false })
+            })
+
+            return true;
+
+        } catch (error) {
+            console.error(`[Error createContact]`, error)
             return
         }
     }
