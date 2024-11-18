@@ -28,25 +28,69 @@ const isBotFunctionEnabled = (body: any) => {
 const processBotFunctions = async (body: any, bot: any) => {
 
     let numberOrId = "";
-    console.log(body?.event);
+
+    // console.log(JSON.stringify(body)); 
+    // console.log(body?.event);
 
     const mapperAttributes = body?.changed_attributes?.map((a: any) => Object.keys(a)).flat(2);
-    console.log(mapperAttributes);
+    // console.log(mapperAttributes);
 
 
-    if (body?.event === "contact_updated" && mapperAttributes.includes('custom_attributes')) {
-        const phone = body?.phone_number.replace('+', '');
+    // if (body?.event === "contact_updated" && mapperAttributes.includes('custom_attributes')) { //  <-- cuando sea atributo de contacto
+    //     const phone = body?.phone_number.replace('+', '');
+    //     numberOrId = phone;
+
+    //     const currentValue = body?.changed_attributes[1]?.custom_attributes?.current_value?.is_active_chatbot;
+
+    //     console.log('numberOrId ' + numberOrId);
+
+    //     // bot.blacklist.checkIf(numberOrId)
+    //     const getBlacklistSnapshot = await bot.blacklist.getList();
+    //     if (currentValue == 'OFF') { //  getBlacklistSnapshot.includes(numberOrId)
+
+    //         console.log("Adding to blacklist:", numberOrId);
+    //         bot.blacklist.add(numberOrId);
+
+    //         // Verificar si la propiedad no existe, y asignarla si es necesario
+    //         if (!DATA_USER[numberOrId]) {
+    //             DATA_USER[numberOrId] = {};  // Inicializa el objeto si no existe
+    //         }
+
+    //         DATA_USER[numberOrId].ASESORCHATWOOT = true;
+    //         return 1;
+    //     } else {
+    //         console.log("Removing from blacklist:", numberOrId);
+
+    //         const dataCheck = bot.blacklist.checkIf(phone)
+
+    //         if (dataCheck) {
+    //             bot.blacklist.remove(numberOrId);
+
+    //             // Verificar si la propiedad no existe, y asignarla si es necesario
+    //             if (!DATA_USER[numberOrId]) {
+    //                 DATA_USER[numberOrId] = {};  // Inicializa el objeto si no existe
+    //             }
+
+    //             DATA_USER[numberOrId].ASESORCHATWOOT = false;
+    //         }
+
+
+    //     }
+    // }
+
+    if (body?.event === "conversation_updated" && mapperAttributes.includes('custom_attributes')) {
+        const phone = body?.meta?.sender?.phone_number.replace('+', '');
         numberOrId = phone;
 
         const currentValue = body?.changed_attributes[1]?.custom_attributes?.current_value?.is_active_chatbot;
 
-        console.log('numberOrId ' + numberOrId);
+        // console.log('numberOrId ' + numberOrId);
 
         // bot.blacklist.checkIf(numberOrId)
         const getBlacklistSnapshot = await bot.blacklist.getList();
         if (currentValue == 'OFF') { //  getBlacklistSnapshot.includes(numberOrId)
 
-            console.log("Adding to blacklist:", numberOrId);
+            // console.log("Adding to blacklist:", numberOrId);
             bot.blacklist.add(numberOrId);
 
             // Verificar si la propiedad no existe, y asignarla si es necesario
@@ -57,7 +101,7 @@ const processBotFunctions = async (body: any, bot: any) => {
             DATA_USER[numberOrId].ASESORCHATWOOT = true;
             return 1;
         } else {
-            console.log("Removing from blacklist:", numberOrId);
+            // console.log("Removing from blacklist:", numberOrId);
 
             const dataCheck = bot.blacklist.checkIf(phone)
 

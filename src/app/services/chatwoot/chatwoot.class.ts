@@ -754,7 +754,7 @@ class ChatwootClass {
                 attribute_description: "Desactiva el chatbot a un cliente", // Descripción del atributo.
                 attribute_key: field, // Clave única para el atributo.
                 attribute_values: ["ON", "OFF"], // Posibles valores para el atributo.
-                attribute_model: 1, // Tipo de modelo: Contacto.
+                //attribute_model: 1, // Tipo de modelo: Contacto.
             };
 
             const url = this.buildBaseUrl(`/custom_attribute_definitions`)
